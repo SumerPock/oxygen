@@ -138,22 +138,10 @@ void TIMER6_IRQHandler(void)
 
 void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 {
-	static int looptimer5 = 0;
-	static int looptimer6 = 0;
-	static int looptimer2s = 0;
-	static int looptimer10s = 0;
-	static int looptimer10min = 0;
-	static int looptimer1min = 0;
-	static int looptimer5min = 0;	
-	static int looptimer8min = 0;
-	static int looptimer10swait = 0;	
-	static int looptimer2min = 0;	
 	static int looptimerpulse[5] = {0, 0, 0, 0, 0};
-	
 	static int nswitchloop = 0;
 	if(htim->period == htim5.period)//没找到怎么判断中断来源，通过和其他计数器不同的设定值来判断是从哪个中断进入的
 	{	
-		
 		/**复位计时器**/
 		if(settimedata.nlooptimer[0] <= 3)
 		{
@@ -165,7 +153,6 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 			settimedata.nlooptimer[0] = 0;
 			settimedata.nlooptimer2s = 1;
 		}
-		
 		
 		settimedata.nlooptimer1s++;
 				
@@ -196,10 +183,10 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 			 nswitchloop = Getflat.Flag_1234switch;
 			 nswitchloop = 4 - nswitchloop;
 			 gStartO2 = 1;
-			if(settimedata.nlooptimer[2] <= 950)
+			if(settimedata.nlooptimer[2] <= AUTOMATICMODETIMEALL)//总时间
 			{
 				settimedata.nlooptimer[2]++;
-				if(settimedata.nlooptimer[2] == 20)
+				if(settimedata.nlooptimer[2] == AUTOMATICMODETIMENUM1)
 				{//第一遍
 					switch(Getflat.Flag_1234switch)//释放当前通道
 					{
@@ -219,7 +206,7 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 							break;
 					}
 				}
-				else if(settimedata.nlooptimer[2] == 320)
+				else if(settimedata.nlooptimer[2] == AUTOMATICMODETIMENUM2)
 				{//第二遍
 					if(Getflat.Flag_1234switch == 0)
 					{	
@@ -238,7 +225,7 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 						gFlagPassageOxygen = 1;
 					}
 				}
-				else if(settimedata.nlooptimer[2] == 620)
+				else if(settimedata.nlooptimer[2] == AUTOMATICMODETIMENUM3)
 				{//第三遍
 					if(Getflat.Flag_1234switch == 0)
 					{	
@@ -257,7 +244,7 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 						gFlagPassageOxygen = 2;
 					}				
 				}
-				else if(settimedata.nlooptimer[2] == 920)
+				else if(settimedata.nlooptimer[2] == AUTOMATICMODETIMENUM4)
 				{//第四遍
 					if(Getflat.Flag_1234switch == 0)
 					{	
@@ -388,7 +375,8 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 		/***** 手动放氧模式	等待10min*****/
 		if(gFlagManualMode == 1)
 		{
-			if(settimedata.nlooptimer[4] < 600)
+			//if(settimedata.nlooptimer[4] < 600)	，500ms的定时器中断，所以需要2倍时间
+			if(settimedata.nlooptimer[4] < MANUALOXYGENRELEASEWAITTIMER)	
 			{
 				if(gModeO2BigThreshold == 1)
 				{
@@ -416,8 +404,8 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 							break;				
 					}					
 				}
-				if(settimedata.nlooptimer[4] >= 550)
-				{//放氧结束后等待10MIN后，改变通道灯和启动灯的颜色
+				if(settimedata.nlooptimer[4] >= (MANUALOXYGENRELEASEWAITTIMER - 60))
+				{	//放氧结束后等待10MIN后，改变通道灯和启动灯的颜色
 					switch(Getflat.Flag_1234switch)
 					{
 						case 0:
@@ -434,37 +422,43 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 							break;
 						default:
 							break;						
-					}		
-					setLed_startup(READ , 1);					
+					}
+					setLed_startup(GREEN , 0);			//关绿灯
+					setLed_startup(READ , 1);				//红灯常亮									
 				}
 			}
-			else 
+			else
 			{
 				settimedata.nlooptimer[4] = 0;
 				gFlagManualMode = 0;
 				memarynew = 1;									//释放10S，用于下次判断
 				gStartO2 = 0;
 				if(gModeO2BigThreshold == 1)
-					gFlagStartLedReadFlash = 0;			//进入小于条件时关闭闪烁的运行红灯
+					gFlagStartLedReadFlash = 0;		//进入小于条件时关闭闪烁的运行红灯
+				
+				setLed_startup(GREEN , 0);			//关绿灯
+				setLed_startup(READ , 1);				//红灯常亮	
+				
 				/**复位		以便二次进入这个模式时使用**/
-				setLed_passage(LEDNUM1, NONE);	//关闭4个通道灯
-				setLed_passage(LEDNUM2, NONE);
-				setLed_passage(LEDNUM3, NONE);
-				setLed_passage(LEDNUM4, NONE);
-				setLed_startup(READ , 0);	//关闭运行灯
+//				setLed_passage(LEDNUM1, NONE);	//关闭4个通道灯
+//				setLed_passage(LEDNUM2, NONE);
+//				setLed_passage(LEDNUM3, NONE);
+//				setLed_passage(LEDNUM4, NONE);
+//				setLed_startup(READ , 0);	//关闭运行灯
+				
 				gGetO2DataOK = 0;		//重新看氧气值
 			}
 		}
-		
+		/***** 手动放氧模式	结束*****/
 		
 		/***** 拒绝放氧模式	等待2MIN*****/
 		if(rejectMode == 1)
-		{
-			if(settimedata.nlooptimer[4] < 120)
+		{//拒绝放氧模式
+			if(settimedata.nlooptimer[4] < REJECTFREEDOYXGENWAITTIMER)
 			{
 				settimedata.nlooptimer[4]++;
 			}
-			else
+			else if(settimedata.nlooptimer[4] >= 240)
 			{
 				settimedata.nlooptimer[4] = 0;
 				//通道灯红常亮
@@ -499,6 +493,8 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 				gFlagStartLedGreenFlash = 0;	//关闭,启动绿灯闪烁标志
 				memarynew = 1;		//开启下一轮
 				gGetO2DataOK = 0;		//重新看氧气值
+				
+				gStartO2 = 0;
 			}
 		}
 		/********************************/

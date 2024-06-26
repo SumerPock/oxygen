@@ -138,41 +138,88 @@ int main(void)
 			Getflat.Flag_1234switch++;
 			SEGGER_RTT_SetTerminal(0);
 			SEGGER_RTT_printf(0, "Getflat.Flag_1234switch = [%d] \r\n", Getflat.Flag_1234switch);
-			switch(Getflat.Flag_1234switch)
+			
+			/*气压值大于设定值 通道绿色灯切*/
+			if(gModeO2BigThreshold == 1 && gModeO2SmallThreshold == 0)
 			{
-				case 0://点亮一通道绿灯
-					setLed_passage(LEDNUM1, GREEN);
-					setLed_passage(LEDNUM2, NONE);
-					setLed_passage(LEDNUM3, NONE);
-					setLed_passage(LEDNUM4, NONE);
-					break;				
-				case 1://点亮二通道绿灯
-					setLed_passage(LEDNUM2, GREEN);
-					setLed_passage(LEDNUM1, NONE);
-					setLed_passage(LEDNUM3, NONE);
-					setLed_passage(LEDNUM4, NONE);
-					break;			
-				case 2://三通道绿灯
-					setLed_passage(LEDNUM3, GREEN);
-					setLed_passage(LEDNUM1, NONE);
-					setLed_passage(LEDNUM2, NONE);
-					setLed_passage(LEDNUM4, NONE);
-					break;			
-				case 3://四通道绿灯
-					setLed_passage(LEDNUM4, GREEN);
-					setLed_passage(LEDNUM1, NONE);
-					setLed_passage(LEDNUM2, NONE);
-					setLed_passage(LEDNUM3, NONE);
-					break;			
-				default:
-					break;
+				switch(Getflat.Flag_1234switch)
+				{
+					case 0://点亮一通道绿灯
+						setLed_passage(LEDNUM1, NONE);//先关后开
+						setLed_passage(LEDNUM2, NONE);
+						setLed_passage(LEDNUM3, NONE);
+						setLed_passage(LEDNUM4, NONE);
+						setLed_passage(LEDNUM1, GREEN);
+						break;				
+					case 1://点亮二通道绿灯
+						setLed_passage(LEDNUM1, NONE);//先关后开
+						setLed_passage(LEDNUM2, NONE);
+						setLed_passage(LEDNUM3, NONE);
+						setLed_passage(LEDNUM4, NONE);
+						setLed_passage(LEDNUM2, GREEN);
+						break;			
+					case 2://三通道绿灯
+						setLed_passage(LEDNUM1, NONE);//先关后开
+						setLed_passage(LEDNUM2, NONE);
+						setLed_passage(LEDNUM3, NONE);
+						setLed_passage(LEDNUM4, NONE);
+						setLed_passage(LEDNUM3, GREEN);
+						break;			
+					case 3://四通道绿灯
+						setLed_passage(LEDNUM1, NONE);//先关后开
+						setLed_passage(LEDNUM2, NONE);
+						setLed_passage(LEDNUM3, NONE);
+						setLed_passage(LEDNUM4, NONE);
+						setLed_passage(LEDNUM4, GREEN);
+						break;			
+					default:
+						break;
+				}				
 			}
+			/*气压值小于设定值 通道红色灯切*/
+			else if(gModeO2BigThreshold == 0 && gModeO2SmallThreshold == 1)
+			{
+				switch(Getflat.Flag_1234switch)
+				{
+					case 0:
+						setLed_passage(LEDNUM1, NONE);//先关后开
+						setLed_passage(LEDNUM2, NONE);
+						setLed_passage(LEDNUM3, NONE);
+						setLed_passage(LEDNUM4, NONE);
+						setLed_passage(LEDNUM1, READ);
+						break;
+					case 1:
+						setLed_passage(LEDNUM1, NONE);//先关后开
+						setLed_passage(LEDNUM2, NONE);
+						setLed_passage(LEDNUM3, NONE);
+						setLed_passage(LEDNUM4, NONE);
+						setLed_passage(LEDNUM2, READ);
+						break;
+					case 2:
+						setLed_passage(LEDNUM1, NONE);//先关后开
+						setLed_passage(LEDNUM2, NONE);
+						setLed_passage(LEDNUM3, NONE);
+						setLed_passage(LEDNUM4, NONE);
+						setLed_passage(LEDNUM3, READ);
+						break;
+					case 3:
+						setLed_passage(LEDNUM1, NONE);//先关后开
+						setLed_passage(LEDNUM2, NONE);
+						setLed_passage(LEDNUM3, NONE);
+						setLed_passage(LEDNUM4, NONE);
+						setLed_passage(LEDNUM4, READ);
+						break;
+					default:
+						break;						
+				}					
+			}
+
 		}
 		
 	
 		/*3.氧气气压值与阈值做判读	//只有当正确接出传感器的值后才进行判断*/	
-//		gGetO2DataOK = 1;
-//		gO2Data = 2000;
+		gGetO2DataOK = 1;
+		gO2Data = 2000;
 		if(gGetO2DataOK == 1)
 		{
 			//gGetO2DataOK = 0;		//重新看氧气值，想了一下不应该在这里复位，而是应该在，手动/自动/拒绝 放氧后去复位
@@ -181,11 +228,13 @@ int main(void)
 				//if(settimedata.nlooptimer[5] == 10)
 				OxygenBiggerThreshold();
 				gModeO2BigThreshold = 1;
+				gModeO2SmallThreshold = 0;
 			}
 			else
 			{
 				//if(settimedata.nlooptimer[5] == 10)
 				OxygenSmallThreshold();
+				gModeO2BigThreshold = 0;
 				gModeO2SmallThreshold = 1;
 			}
 		}
@@ -209,7 +258,7 @@ int main(void)
 			//2.相应的通道灯红色灯亮,在OxygenSmallThreshold()中实现
 			//3.启动10S定时器，并判读10S内是否启动按下按下
 			if(settimedata.nlooptimer[1] <= 10)
-			{
+			{//10s内按下
 				memarynew = 2;
 				if(key_check_state(KEY_RUN, KEY_PRESS))
 				{
@@ -223,7 +272,7 @@ int main(void)
 			}
 			else
 			{
-				//4.自动模式,关闭10S定时器
+				//4.10S内未按下，进入自动模式,关闭10S定时器
 				gFlag10s = 0;
 				//5.启动灯绿色亮
 				setLed_startup(GREEN , 1);
@@ -260,7 +309,10 @@ int main(void)
 				else if(Getflat.Flag_run == 2)//第二次按下,进入手动放氧模式
 				{	
 					gFlagStartLedGreenFlash = 0;	//关闭启动绿灯闪烁
-					setLed_startup(GREEN , 1);		//关绿灯
+					//setLed_startup(GREEN , 1);	//关绿灯
+					setLed_startup(GREEN , 0);		//关绿灯
+					setLed_startup(READ  , 1);		//开红灯
+					//gFlagStartLedReadFlash = 1;			//启动红灯闪烁
 					gFlagPress10SInner = 0;
 					SEGGER_RTT_SetTerminal(0);
 					SEGGER_RTT_printf(0, "gFlagManualMode \r\n");
@@ -291,6 +343,16 @@ int main(void)
 					setLed_startup(READ , 2);
 				}
 			}				
+		}else if(gModeO2SmallThreshold == 1){
+			/**启动红灯闪烁**/
+			if(gFlagStartLedReadFlash == 1)
+			{
+				if(settimedata.nlooptimer100ms == 1)
+				{
+					settimedata.nlooptimer100ms = 0;
+					setLed_startup(READ , 2);
+				}
+			}					
 		}
 		
 		
@@ -335,7 +397,7 @@ void OxygenBiggerThreshold(void)
 			break;
 
 			case 2://第二次按下
-				setLed_startup(GREEN , 1);	//绿灯开启
+//				setLed_startup(GREEN , 1);	//绿灯开启
 				gFlagManualMode = 1;
 				gFlagStartLedReadFlash = 1; //启动红灯闪烁
 			break;
