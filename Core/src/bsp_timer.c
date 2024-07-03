@@ -186,7 +186,7 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 			if(settimedata.nlooptimer[2] <= AUTOMATICMODETIMEALL)//总时间
 			{
 				settimedata.nlooptimer[2]++;
-				if(settimedata.nlooptimer[2] == AUTOMATICMODETIMENUM1)
+ 				if(settimedata.nlooptimer[2] == AUTOMATICMODETIMENUM1)
 				{//第一遍
 					switch(Getflat.Flag_1234switch)//释放当前通道
 					{
@@ -271,6 +271,12 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 				memarynew = 1;			//释放10S，用于下次判断
 				gStartO2 = 0;				//结束放氧
 				gGetO2DataOK = 0;		//重新看氧气值
+				
+				setLed_startup(GREEN , 0);		/*关闭启动灯*/
+				/**	自动流程走完/手动流程走完/禁止放氧走完**/
+				//Getflat.Flag_1234switch = 0;		//这里可以取一个巧，因为第二遍肯定要从1开始，而第一遍可以漏过当前通道之前的通道
+				settimedata.nlooptimer[1] = 0;		//3.启动10S定时器，并判读10S内是否启动按下按下
+				gFlag10s = 1;											//启动10s定时器，settimedata.nlooptimer[1] 计数器自加
 			}
 		}
 		
@@ -279,22 +285,25 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 		/***** 放氧通道1	*****/
 		if(gFlagPassageOxygen == 1)
 		{
-			if(settimedata.nlooptimer[6] <= 4)
+			if(settimedata.nlooptimer[6] < 5)
 			{
 				settimedata.nlooptimer[6]++;
-				if(settimedata.nlooptimer[6] <= 2)
+				if(settimedata.nlooptimer[6] <= 3)
 				{
 					SetPassageOxygen(1 , 1);
 				}		
-				else if(settimedata.nlooptimer[6] > 2 && settimedata.nlooptimer[6] < 4)
+				else if(settimedata.nlooptimer[6] > 3 && settimedata.nlooptimer[6] < 5)
 				{
 					SetPassageOxygen(1 , 0);
 				}
 			}	
-			else{
-				setLed_passage(LEDNUM1 , GREEN);
-				gFlagPassageOxygen = 0;
+			else if(settimedata.nlooptimer[6] >= 5)
+			{
+				setLed_passage(LEDNUM1 , NONE);	//先关
+				setLed_passage(LEDNUM1 , GREEN);//开绿灯
 				settimedata.nlooptimer[6] = 0;
+				gFlagPassageOxygen = 0;
+				
 			}
 		}
 
@@ -302,19 +311,21 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 		/***** 放氧通道2	*****/
 		if(gFlagPassageOxygen == 2)
 		{
-			if(settimedata.nlooptimer[6] <= 4)
+			if(settimedata.nlooptimer[6] < 5)
 			{
 				settimedata.nlooptimer[6]++;
-				if(settimedata.nlooptimer[6] <= 2)
+				if(settimedata.nlooptimer[6] <= 3)
 				{
 					SetPassageOxygen(2, 1);
 				}		
-				else if(settimedata.nlooptimer[6] > 2 && settimedata.nlooptimer[6] < 4)
+				else if(settimedata.nlooptimer[6] > 3 && settimedata.nlooptimer[6] < 5)
 				{
 					SetPassageOxygen(2 , 0);
 				}
 			}
-			else{
+			else if(settimedata.nlooptimer[6] >= 5)
+			{
+				setLed_passage(LEDNUM2 , NONE);	//先关
 				setLed_passage(LEDNUM2 , GREEN);
 				gFlagPassageOxygen = 0;
 				settimedata.nlooptimer[6] = 0;		
@@ -326,20 +337,21 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 		/***** 放氧通道3	*****/
 		if(gFlagPassageOxygen == 3)
 		{
-			if(settimedata.nlooptimer[6] <= 4)
+			if(settimedata.nlooptimer[6] < 5)
 			{
 				settimedata.nlooptimer[6]++;
-				if(settimedata.nlooptimer[6] <= 2)
+				if(settimedata.nlooptimer[6] <= 3)
 				{
 					SetPassageOxygen(3 , 1);
 				}		
-				else if(settimedata.nlooptimer[6] > 2 && settimedata.nlooptimer[6] < 4)
+				else if(settimedata.nlooptimer[6] > 3 && settimedata.nlooptimer[6] < 5)
 				{
 					SetPassageOxygen(3 , 0);
 				}
 			}
-			else 
+			else if(settimedata.nlooptimer[6] >= 5)
 			{
+				setLed_passage(LEDNUM3 , NONE);
 				setLed_passage(LEDNUM3 , GREEN);
 				gFlagPassageOxygen = 0;
 				settimedata.nlooptimer[6] = 0;						
@@ -351,20 +363,21 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 		/***** 放氧通道4	*****/
 		if(gFlagPassageOxygen == 4)
 		{
-			if(settimedata.nlooptimer[6] <= 4)
+			if(settimedata.nlooptimer[6] < 5)
 			{
 				settimedata.nlooptimer[6]++;
-				if(settimedata.nlooptimer[6] <= 2)
+				if(settimedata.nlooptimer[6] <= 3)
 				{
 					SetPassageOxygen(4 , 1);
 				}		
-				else if(settimedata.nlooptimer[6] > 2 && settimedata.nlooptimer[6] < 4)
+				else if(settimedata.nlooptimer[6] > 3 && settimedata.nlooptimer[6] < 5)
 				{
 					SetPassageOxygen(4 , 0);
 				}
 			}			
-			else
+			else if(settimedata.nlooptimer[6] >= 5)
 			{
+				setLed_passage(LEDNUM4 , NONE);
 				setLed_passage(LEDNUM4 , GREEN);
 				gFlagPassageOxygen = 0;
 				settimedata.nlooptimer[6] = 0;	
@@ -437,16 +450,46 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 					gFlagStartLedReadFlash = 0;		//进入小于条件时关闭闪烁的运行红灯
 				
 				setLed_startup(GREEN , 0);			//关绿灯
-				setLed_startup(READ , 1);				//红灯常亮	
+				//setLed_startup(READ , 1);				//红灯常亮	
 				
 				/**复位		以便二次进入这个模式时使用**/
-//				setLed_passage(LEDNUM1, NONE);	//关闭4个通道灯
-//				setLed_passage(LEDNUM2, NONE);
-//				setLed_passage(LEDNUM3, NONE);
-//				setLed_passage(LEDNUM4, NONE);
-//				setLed_startup(READ , 0);	//关闭运行灯
-				
-				gGetO2DataOK = 0;		//重新看氧气值
+				switch(Getflat.Flag_1234switch)
+				{
+					case 0://点亮一通道绿灯
+						setLed_passage(LEDNUM1, NONE);//先关后开
+						setLed_passage(LEDNUM2, NONE);
+						setLed_passage(LEDNUM3, NONE);
+						setLed_passage(LEDNUM4, NONE);
+						setLed_passage(LEDNUM1, GREEN);
+						break;				
+					case 1://点亮二通道绿灯
+						setLed_passage(LEDNUM1, NONE);//先关后开
+						setLed_passage(LEDNUM2, NONE);
+						setLed_passage(LEDNUM3, NONE);
+						setLed_passage(LEDNUM4, NONE);
+						setLed_passage(LEDNUM2, GREEN);
+						break;			
+					case 2://三通道绿灯
+						setLed_passage(LEDNUM1, NONE);//先关后开
+						setLed_passage(LEDNUM2, NONE);
+						setLed_passage(LEDNUM3, NONE);
+						setLed_passage(LEDNUM4, NONE);
+						setLed_passage(LEDNUM3, GREEN);
+						break;			
+					case 3://四通道绿灯
+						setLed_passage(LEDNUM1, NONE);//先关后开
+						setLed_passage(LEDNUM2, NONE);
+						setLed_passage(LEDNUM3, NONE);
+						setLed_passage(LEDNUM4, NONE);
+						setLed_passage(LEDNUM4, GREEN);
+						break;			
+					default:
+						break;
+				}					
+				gGetO2DataOK = 0;		//重新看氧气值			
+				/**	自动流程走完/手动流程走完/禁止放氧走完**/
+				settimedata.nlooptimer[1] = 0;		//3.启动10S定时器，并判读10S内是否启动按下按下
+				gFlag10s = 1;											//启动10s定时器，settimedata.nlooptimer[1] 计数器自加
 			}
 		}
 		/***** 手动放氧模式	结束*****/
@@ -458,7 +501,8 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 			{
 				settimedata.nlooptimer[4]++;
 			}
-			else if(settimedata.nlooptimer[4] >= 240)
+			else if(settimedata.nlooptimer[4] >= REJECTFREEDOYXGENWAITTIMER)
+			//else if(settimedata.nlooptimer[4] >= 240)
 			{
 				settimedata.nlooptimer[4] = 0;
 				//通道灯红常亮
@@ -483,7 +527,8 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 				if(Getflat.Flag_Gear == 0)
 				{
 					setLed_gear(GREEN_LOW , 1);
-				}else if(Getflat.Flag_Gear == 1)
+				}
+				else if(Getflat.Flag_Gear == 1)
 				{
 					setLed_gear(GREEN_HIGHT , 1);
 				}
@@ -493,8 +538,12 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 				gFlagStartLedGreenFlash = 0;	//关闭,启动绿灯闪烁标志
 				memarynew = 1;		//开启下一轮
 				gGetO2DataOK = 0;		//重新看氧气值
-				
 				gStartO2 = 0;
+				
+				/**	自动流程走完/手动流程走完/禁止放氧走完**/
+//				memarynew = 1;										//释放10S，用于下次判断
+				settimedata.nlooptimer[1] = 0;		//3.启动10S定时器，并判读10S内是否启动按下按下
+				gFlag10s = 1;											//启动10s定时器，settimedata.nlooptimer[1] 计数器自加
 			}
 		}
 		/********************************/

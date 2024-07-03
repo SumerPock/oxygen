@@ -10,17 +10,14 @@ unsigned char recv_buff[64] = {0};
 unsigned char FRAMEHEAD = 0X4F;
 unsigned char FRAMETAIL = 0x0A;
 
-// 氧气含量水平
-#define oxygeHigh  80
-#define oxygeLow  40
-uint8_t ledcount = 0;
-// 手动/自动选择标志位
-bool flagChoose = 0;
-// 当前强度
-uint8_t amp 			= oxygeLow;
-uint8_t powerFlag = 0;
+#define GERO2MODE
+//#define O2DATAMOREGEASS		//强制氧气含量大于阈值
+//#define O2DATALESSGEASS		//强制氧气含量小于阈值
+#define AUTOMODE						//自动模式
 
-float t_unit = 0.5;
+#define HIGHTO2		1470			//高档位氧气阈值	
+#define LOWO2			1240			//低档位氧气阈值
+
 
 // 获取氧气含量
 int oxyge = 0;
@@ -69,10 +66,12 @@ int main(void)
 {
 	systick_config();
 	
+	#ifdef DEBUG
 	SEGGER_RTT_ConfigUpBuffer(0, "RTTUP", NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
 	SEGGER_RTT_ConfigDownBuffer(0, "RTTDOWN", NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
 	SEGGER_RTT_SetTerminal(1);
 	SEGGER_RTT_printf(0, "SEGGER_RTT_GetKey \r\n");	
+	#endif
 	
 	GPIO_Key_Board_Init();        //按键配置
 	SET_Onboard_LEDInit();				//挡位指示灯配置
@@ -119,16 +118,19 @@ int main(void)
 		if(key_check_state(KEY_SW2, KEY_PRESS))
 		{
 			Getflat.Flag_Gear++;
+			#ifdef DEBUG
 			SEGGER_RTT_SetTerminal(0);
 			SEGGER_RTT_printf(0, "Getflat.Flag_Gear = [%d] \r\n", Getflat.Flag_Gear);	
+			#endif
 			if(Getflat.Flag_Gear == 0)
 			{
 				setLed_gear(GREEN_LOW, 1);				//抵挡
-				Geass_threshold = 1240;
-			}else if(Getflat.Flag_Gear == 1)
+				Geass_threshold = LOWO2;
+			}
+			else if(Getflat.Flag_Gear == 1)
 			{
 				setLed_gear(GREEN_HIGHT, 1);			//高档
-				Geass_threshold = 1470;
+				Geass_threshold = HIGHTO2;
 			}				
 		}
 		
@@ -136,9 +138,11 @@ int main(void)
 		if(key_check_state(KEY_SW1, KEY_PRESS))
 		{
 			Getflat.Flag_1234switch++;
-			SEGGER_RTT_SetTerminal(0);
-			SEGGER_RTT_printf(0, "Getflat.Flag_1234switch = [%d] \r\n", Getflat.Flag_1234switch);
-			
+			#ifdef DEBUG
+			/* Your debugging statements here */
+				SEGGER_RTT_SetTerminal(0);
+				SEGGER_RTT_printf(0, "Getflat.Flag_1234switch = [%d] \r\n", Getflat.Flag_1234switch);
+			#endif		
 			/*气压值大于设定值 通道绿色灯切*/
 			if(gModeO2BigThreshold == 1 && gModeO2SmallThreshold == 0)
 			{
@@ -213,26 +217,34 @@ int main(void)
 						break;						
 				}					
 			}
-
 		}
 		
 	
 		/*3.氧气气压值与阈值做判读	//只有当正确接出传感器的值后才进行判断*/	
-		gGetO2DataOK = 1;
-		gO2Data = 2000;
+		#ifdef GERO2MODE
+				#ifdef O2DATAMOREGEASS
+					gGetO2DataOK = 1;
+					gO2Data = 2000;	
+				#endif
+
+				#ifdef O2DATALESSGEASS
+					gGetO2DataOK = 1;
+					gO2Data = 1000;		
+				#endif
+		
+				#ifdef AUTOMODE	
+				#endif
+		#endif
 		if(gGetO2DataOK == 1)
 		{
-			//gGetO2DataOK = 0;		//重新看氧气值，想了一下不应该在这里复位，而是应该在，手动/自动/拒绝 放氧后去复位
 			if(gO2Data >= Geass_threshold)
 			{
-				//if(settimedata.nlooptimer[5] == 10)
 				OxygenBiggerThreshold();
 				gModeO2BigThreshold = 1;
 				gModeO2SmallThreshold = 0;
 			}
 			else
 			{
-				//if(settimedata.nlooptimer[5] == 10)
 				OxygenSmallThreshold();
 				gModeO2BigThreshold = 0;
 				gModeO2SmallThreshold = 1;
@@ -256,6 +268,7 @@ int main(void)
 				}
 			}
 			//2.相应的通道灯红色灯亮,在OxygenSmallThreshold()中实现
+			
 			//3.启动10S定时器，并判读10S内是否启动按下按下
 			if(settimedata.nlooptimer[1] <= 10)
 			{//10s内按下
@@ -299,8 +312,10 @@ int main(void)
 					gFlagStartLedGreenFlash = 1;	
 					if(settimedata.nlooptimer[0] >= 2)
 					{
+						#ifdef DEBUG
 						SEGGER_RTT_SetTerminal(0);
 						SEGGER_RTT_printf(0, "nonoO2mode \r\n");
+						#endif
 						gFlagStartLedGreenFlash = 0;	//关闭启动绿灯闪烁
 						setLed_startup(GREEN , 0);		//开绿灯
 						rejectMode = 1;								//进入拒绝放氧模式
@@ -312,10 +327,12 @@ int main(void)
 					//setLed_startup(GREEN , 1);	//关绿灯
 					setLed_startup(GREEN , 0);		//关绿灯
 					setLed_startup(READ  , 1);		//开红灯
-					//gFlagStartLedReadFlash = 1;			//启动红灯闪烁
+					//gFlagStartLedReadFlash = 1;	//启动红灯闪烁
 					gFlagPress10SInner = 0;
+					#ifdef DEBUG
 					SEGGER_RTT_SetTerminal(0);
 					SEGGER_RTT_printf(0, "gFlagManualMode \r\n");
+					#endif
 					gFlagManualMode = 1;//进入手动放氧模式
 				}			
 			}
@@ -373,8 +390,10 @@ void OxygenBiggerThreshold(void)
 	{
 		gFlagStartLedReadFlash = 1;//启动红灯闪烁
 		Getflat.Flag_run++;	
+		#ifdef DEBUG
 		SEGGER_RTT_SetTerminal(0);
 		SEGGER_RTT_printf(0, "Getflat.Flag_run = [%d] \r\n", Getflat.Flag_run);
+		#endif
 		//0 -> 1 第一次按下
 		//1 -> 2 第二次按下
 		//2 -> 3 第三次按下，屏蔽掉
@@ -470,7 +489,7 @@ void OxygenSmallThreshold(void)
 	/**	自动流程走完/手动流程走完/禁止放氧走完**/
 	if(memarynew == 1)//必须运行一遍任意的一个流程后才能够去启动它
 	{
-		settimedata.nlooptimer[1] = 0;//3.启动10S定时器，并判读10S内是否启动按下按下
+		settimedata.nlooptimer[1] = 0;				//3.启动10S定时器，并判读10S内是否启动按下按下
 		gFlag10s = 1;
 		//settimedata.nlooptimer10s = 0;		
 	}

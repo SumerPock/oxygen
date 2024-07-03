@@ -158,17 +158,27 @@
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>Getflat.Flag_run</ItemText>
+          <ItemText>settimedata.nlooptimer[4],0x0A</ItemText>
         </Ww>
         <Ww>
           <count>1</count>
           <WinNumber>1</WinNumber>
-          <ItemText>settimedata.nlooptimer[4],0x0A</ItemText>
+          <ItemText>settimedata.nlooptimer[2],0x0A</ItemText>
         </Ww>
         <Ww>
           <count>2</count>
           <WinNumber>1</WinNumber>
-          <ItemText>gStartO2</ItemText>
+          <ItemText>settimedata.nlooptimer[1]</ItemText>
+        </Ww>
+        <Ww>
+          <count>3</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>settimedata.nlooptimer[6]</ItemText>
+        </Ww>
+        <Ww>
+          <count>4</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>gFlagPassageOxygen</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>

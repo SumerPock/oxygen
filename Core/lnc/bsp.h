@@ -73,13 +73,20 @@ typedef struct
 
 enum{
 	MANUALOXYGENRELEASEWAITTIMER = 1200,	//手动放氧等待时间 10mins = 600s * 2 = 1200s
-	REJECTFREEDOYXGENWAITTIMER	 = 240,		//拒绝放氧等待时间 2min = 120s * 2 = 240s
-	
-	AUTOMATICMODETIMEALL  = 2000,					// 总时间
+	REJECTFREEDOYXGENWAITTIMER	 = 240,		//拒绝放氧等待时间 2min = 120s * 2 = 240s	
+	AUTOMATICMODETIMEALL  = 2000,					//自动模式 总时间
 	AUTOMATICMODETIMENUM1 = 20,						//1通道开始时间，5min间隔
 	AUTOMATICMODETIMENUM2 = 620,					//1通道开始时间，5min间隔
 	AUTOMATICMODETIMENUM3 = 1220,					//1通道开始时间，5min间隔
 	AUTOMATICMODETIMENUM4 = 1820,					//1通道开始时间，5min间隔
+
+//	MANUALOXYGENRELEASEWAITTIMER = 120,		//手动放氧等待时间 10mins = 600s * 2 = 1200s	
+//	REJECTFREEDOYXGENWAITTIMER	 = 40,		//拒绝放氧等待时间 2min = 120s * 2 = 240s	
+//	AUTOMATICMODETIMEALL  = 60,					// 总时间
+//	AUTOMATICMODETIMENUM1 = 15,					//1通道开始时间，5min间隔
+//	AUTOMATICMODETIMENUM2 = 25,					//1通道开始时间，5min间隔
+//	AUTOMATICMODETIMENUM3 = 35,					//1通道开始时间，5min间隔
+//	AUTOMATICMODETIMENUM4 = 45,					//1通道开始时间，5min间隔
 };
 
 
