@@ -4,6 +4,7 @@
 #include "main.h"
 #include "bsp.h"
 #include "SEGGER_RTT.h"
+#include <stdio.h>
 
 unsigned char recv_buff_len  = 0;
 unsigned char recv_buff[64] = {0};
@@ -16,6 +17,7 @@ unsigned char FRAMETAIL = 0x0A;
 #define AUTOMODE						//自动模式
 
 #define HIGHTO2		1470			//高档位氧气阈值	
+//#define HIGHTO2		2470			//高档位氧气阈值	
 #define LOWO2			1240			//低档位氧气阈值
 
 
@@ -86,12 +88,15 @@ int main(void)
 	timer_enable(TIMER6);
 
 	int Geass_threshold = 1240;	//阈值
+//	int Geass_threshold = 2240;		//阈值
 	/*默认通道1		绿色灯点亮*/
 	setLed_passage(LEDNUM1 , GREEN);
 	/*默认挡位低	绿色灯点亮*/
 	setLed_gear(GREEN_LOW, 1);
 	/*默认运行灯	绿色红色熄灭*/
 	setLed_startup(GREEN, 0);
+	USART_DEBUG_Init();
+	printf("程序开始运行 \r\n");
 	
 	/**上电后发送M 1 /r/n **/
 	unsigned char arrbuffer[] = "M 1\r\n";
@@ -112,16 +117,11 @@ int main(void)
 	Getflat.Flag_1234switch = 0;	//0,代表1通道
 	Getflat.Flag_run = 0;					//0,代表未触发
 	
-	while(1){	
-		
+	while(1){		
 		/*1.判断挡位*/	
 		if(key_check_state(KEY_SW2, KEY_PRESS))
 		{
 			Getflat.Flag_Gear++;
-			#ifdef DEBUG
-			SEGGER_RTT_SetTerminal(0);
-			SEGGER_RTT_printf(0, "Getflat.Flag_Gear = [%d] \r\n", Getflat.Flag_Gear);	
-			#endif
 			if(Getflat.Flag_Gear == 0)
 			{
 				setLed_gear(GREEN_LOW, 1);				//抵挡
@@ -137,12 +137,7 @@ int main(void)
 		/*2.判断通道*/
 		if(key_check_state(KEY_SW1, KEY_PRESS))
 		{
-			Getflat.Flag_1234switch++;
-			#ifdef DEBUG
-			/* Your debugging statements here */
-				SEGGER_RTT_SetTerminal(0);
-				SEGGER_RTT_printf(0, "Getflat.Flag_1234switch = [%d] \r\n", Getflat.Flag_1234switch);
-			#endif		
+			Getflat.Flag_1234switch++;	
 			/*气压值大于设定值 通道绿色灯切*/
 			if(gModeO2BigThreshold == 1 && gModeO2SmallThreshold == 0)
 			{
@@ -218,9 +213,8 @@ int main(void)
 				}					
 			}
 		}
-		
 	
-		/*3.氧气气压值与阈值做判读	//只有当正确接出传感器的值后才进行判断*/	
+		/*3.氧气气压值与阈值做判读，只有当正确接出传感器的值后才进行判断*/	
 		#ifdef GERO2MODE
 				#ifdef O2DATAMOREGEASS
 					gGetO2DataOK = 1;
@@ -235,6 +229,7 @@ int main(void)
 				#ifdef AUTOMODE	
 				#endif
 		#endif
+		/*3.氧气气压值与阈值做判读，只有当正确接出传感器的值后才进行判断*/	
 		if(gGetO2DataOK == 1)
 		{
 			if(gO2Data >= Geass_threshold)
@@ -250,9 +245,8 @@ int main(void)
 				gModeO2SmallThreshold = 1;
 			}
 		}
-
-		
-		/***	以下添加为气压值小于设定挡位阈值	***/
+	
+		/**气压值小于设定挡位阈值**/
 		if(gModeO2SmallThreshold == 1)
 		{		
 			/*1.挡位灯1S闪一下*/
@@ -283,7 +277,7 @@ int main(void)
 					settimedata.nlooptimer[1] = 0;
 				}
 			}
-			else
+			else if(settimedata.nlooptimer[1] > 10 && settimedata.nlooptimer[1] < 20)//超过了10s
 			{
 				//4.10S内未按下，进入自动模式,关闭10S定时器
 				gFlag10s = 0;
@@ -291,6 +285,9 @@ int main(void)
 				setLed_startup(GREEN , 1);
 				//6.依次放氧所有的通道，首先判断是否为通道1，或4
 				gFlagAutoMode = 1;
+				printf("进入自动放氧模式 \r\n");
+				usart_interrupt_disable(USART0 , USART_INT_RBNE);
+				settimedata.nlooptimer[1] = 21; //避免重复进入
 			}	
 			/*2S时间到连续按下运行检测，及双击检测*/
 			if(settimedata.nlooptimer2s == 1)
@@ -319,6 +316,9 @@ int main(void)
 						gFlagStartLedGreenFlash = 0;	//关闭启动绿灯闪烁
 						setLed_startup(GREEN , 0);		//开绿灯
 						rejectMode = 1;								//进入拒绝放氧模式
+						usart_interrupt_disable(USART0, USART_INT_RBNE);
+						printf("进入拒绝放氧模式 \r\n");
+						Getflat.Flag_run = 0;//避免重复进入
 					}
 				}
 				else if(Getflat.Flag_run == 2)//第二次按下,进入手动放氧模式
@@ -334,6 +334,8 @@ int main(void)
 					SEGGER_RTT_printf(0, "gFlagManualMode \r\n");
 					#endif
 					gFlagManualMode = 1;//进入手动放氧模式
+					usart_interrupt_disable(USART0, USART_INT_RBNE);
+					printf("进入手动放氧模式 \r\n");
 				}			
 			}
 			/**第一次按下启动后，启动绿灯闪烁**/
@@ -370,9 +372,7 @@ int main(void)
 					setLed_startup(READ , 2);
 				}
 			}					
-		}
-		
-		
+		}		
 		
 	}
 }
@@ -388,6 +388,7 @@ void OxygenBiggerThreshold(void)
 	/*3.判断运行*/
 	if(key_check_state(KEY_RUN, KEY_RELEASE))
 	{
+		printf("氧气值大于设定值 , 第一次按下运行按键 \r\n");
 		gFlagStartLedReadFlash = 1;//启动红灯闪烁
 		Getflat.Flag_run++;	
 		#ifdef DEBUG
@@ -402,7 +403,6 @@ void OxygenBiggerThreshold(void)
 			settimedata.nlooptimer[0] = 0; //按下后复位3S			
 		}
 
-		
 		switch(Getflat.Flag_run)
 		{
 			case 1://第一次按下
@@ -416,27 +416,34 @@ void OxygenBiggerThreshold(void)
 			break;
 
 			case 2://第二次按下
+				printf("氧气值大于设定值 , 第二次按下运行按键 \r\n");
+				usart_interrupt_disable(USART0, USART_INT_RBNE);
+				printf("关闭串口中断，避免干扰 \r\n");
 //				setLed_startup(GREEN , 1);	//绿灯开启
-				gFlagManualMode = 1;
-				gFlagStartLedReadFlash = 1; //启动红灯闪烁
+				gFlagManualMode = 1;  				//手动放氧模式
+				gFlagStartLedReadFlash = 1; 	//启动红灯闪烁
 			break;
 
 			default:
 			break;
-		}		
+		}	
 	}
-
-	/*2S时间到连续按下运行检测*/
-	if(settimedata.nlooptimer2s == 1)
+	
+	if(Getflat.Flag_run == 1)
 	{
-		if(Getflat.Flag_run == 1)
+		/*2S时间到连续按下运行检测*/
+		if(settimedata.nlooptimer2s == 1)
 		{
-			gFlagStartLedReadFlash = 0;			//关闭运行红灯闪烁
-		}
-		settimedata.nlooptimer2s = 0;
-		Getflat.Flag_run = 0; 					//时间到了之后复位连续按下状态
-		setLed_startup(GREEN , 0);			//关闭运行灯，红绿同时关		
-	}	
+			if(Getflat.Flag_run == 1)
+			{
+				gFlagStartLedReadFlash = 0;			//关闭运行红灯闪烁
+			}
+			settimedata.nlooptimer2s = 0;
+			Getflat.Flag_run = 0; 					//时间到了之后复位连续按下状态
+			setLed_startup(GREEN , 0);			//关闭运行灯，红绿同时关	
+			printf("氧气值大于设定值 , 但是没有双击按下复位 \r\n");
+		}				
+	}
 	
 	
 }
@@ -455,7 +462,8 @@ void OxygenSmallThreshold(void)
 	gFlagPassLedToolg1S  = 1;
 	//2.相应的通道灯红色灯亮,按下按键后不进入这里
 	if(gStartO2 == 0)
-	{//一旦开始放氧后就不可以进入此条件，否则会干扰放氧指示灯，此处会强制刷红色
+	{
+		//一旦开始放氧后就不可以进入此条件，否则会干扰放氧指示灯，此处会强制刷红色
 		switch(Getflat.Flag_1234switch)
 		{
 			case 0://点亮一通道红灯
@@ -550,6 +558,7 @@ void USART0_IRQHandler(void)
 						recv_buff[recv_buff_len] = data;
 						float o2data = parseFloatFromAscii(&recv_buff[0], recv_buff_len + 1) * 10;
 						gO2Data = o2data;
+						printf("当前传感器氧气值 = %d \r\n" , gO2Data);
 //						int nO2Data = o2data * 10;
 						//mbar			
 						gGetO2DataOK = 1;						

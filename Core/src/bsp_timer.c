@@ -1,23 +1,10 @@
 
 
 #include "bsp.h"
+#include <stdio.h>
 
 void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim);
 
-//void MX_TIM4_Init(void)
-//{
-//	rcu_periph_clock_enable(RCU_TIMER4);
-//	htim4.prescaler         = 7999;
-//  htim4.alignedmode       = TIMER_COUNTER_EDGE;
-//  htim4.counterdirection  = TIMER_COUNTER_UP;
-//	htim4.period            = 999;
-//  htim4.clockdivision     = TIMER_CKDIV_DIV1;
-//  htim4.repetitioncounter = 0;
-//  timer_init(TIMER4 , &htim5);
-//	//timer_master_output_trigger_source_select(TIMER5,TIMER_TRI_OUT_SRC_RESET);
-//	nvic_irq_enable(TIMER4_IRQn , 0 , 0);
-//	timer_interrupt_enable(TIMER4 , TIMER_INT_UP);	
-//}
 
 // 基本定时器初始化
 void timer2_init(void) {
@@ -143,7 +130,18 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 	if(htim->period == htim5.period)//没找到怎么判断中断来源，通过和其他计数器不同的设定值来判断是从哪个中断进入的
 	{	
 		/**复位计时器**/
-		if(settimedata.nlooptimer[0] <= 3)
+//		if(settimedata.nlooptimer[0] <= 3)
+//		{
+//			settimedata.nlooptimer[0]++;
+//			settimedata.nlooptimer2s = 0;
+//		}
+//		else
+//		{
+//			settimedata.nlooptimer[0] = 0;
+//			settimedata.nlooptimer2s = 1;
+//		}
+
+		if(settimedata.nlooptimer[0] <= 4)
 		{
 			settimedata.nlooptimer[0]++;
 			settimedata.nlooptimer2s = 0;
@@ -186,6 +184,7 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 			if(settimedata.nlooptimer[2] <= AUTOMATICMODETIMEALL)//总时间
 			{
 				settimedata.nlooptimer[2]++;
+				printf("auto Release oxygen Mode time = %d \r\n" , settimedata.nlooptimer[2]);
  				if(settimedata.nlooptimer[2] == AUTOMATICMODETIMENUM1)
 				{//第一遍
 					switch(Getflat.Flag_1234switch)//释放当前通道
@@ -266,6 +265,7 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 			}
 			else
 			{
+				printf("auto Release oxygen Mode is over reset uart0IQR \r\n");
 				settimedata.nlooptimer[2] = 0;
 				gFlagAutoMode = 0;
 				memarynew = 1;			//释放10S，用于下次判断
@@ -273,10 +273,11 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 				gGetO2DataOK = 0;		//重新看氧气值
 				
 				setLed_startup(GREEN , 0);		/*关闭启动灯*/
-				/**	自动流程走完/手动流程走完/禁止放氧走完**/
+				/**	自动 走完**/
 				//Getflat.Flag_1234switch = 0;		//这里可以取一个巧，因为第二遍肯定要从1开始，而第一遍可以漏过当前通道之前的通道
 				settimedata.nlooptimer[1] = 0;		//3.启动10S定时器，并判读10S内是否启动按下按下
 				gFlag10s = 1;											//启动10s定时器，settimedata.nlooptimer[1] 计数器自加
+				usart_interrupt_enable(USART0 , USART_INT_RBNE);	
 			}
 		}
 		
@@ -290,10 +291,12 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 				settimedata.nlooptimer[6]++;
 				if(settimedata.nlooptimer[6] <= 3)
 				{
+					printf("Channel One the GPIO Set Hight time = %d \r\n" , settimedata.nlooptimer[6]);
 					SetPassageOxygen(1 , 1);
 				}		
 				else if(settimedata.nlooptimer[6] > 3 && settimedata.nlooptimer[6] < 5)
 				{
+					printf("Channel One the GPIO Set Low  time = %d \r\n", settimedata.nlooptimer[6]);
 					SetPassageOxygen(1 , 0);
 				}
 			}	
@@ -316,10 +319,12 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 				settimedata.nlooptimer[6]++;
 				if(settimedata.nlooptimer[6] <= 3)
 				{
+					printf("Channel two the GPIO Set Hight time = %d \r\n" , settimedata.nlooptimer[6]);
 					SetPassageOxygen(2, 1);
 				}		
 				else if(settimedata.nlooptimer[6] > 3 && settimedata.nlooptimer[6] < 5)
 				{
+					printf("Channel two the GPIO Set Low time = %d \r\n" , settimedata.nlooptimer[6]);
 					SetPassageOxygen(2 , 0);
 				}
 			}
@@ -342,10 +347,12 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 				settimedata.nlooptimer[6]++;
 				if(settimedata.nlooptimer[6] <= 3)
 				{
+					printf("Channel three the GPIO Set Hight time = %d \r\n" , settimedata.nlooptimer[6]);
 					SetPassageOxygen(3 , 1);
 				}		
 				else if(settimedata.nlooptimer[6] > 3 && settimedata.nlooptimer[6] < 5)
 				{
+					printf("Channel three the GPIO Set Low time = %d \r\n" , settimedata.nlooptimer[6]);
 					SetPassageOxygen(3 , 0);
 				}
 			}
@@ -368,10 +375,12 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 				settimedata.nlooptimer[6]++;
 				if(settimedata.nlooptimer[6] <= 3)
 				{
+					printf("Channel four the GPIO Set Hight time = %d \r\n" , settimedata.nlooptimer[6]);
 					SetPassageOxygen(4 , 1);
 				}		
 				else if(settimedata.nlooptimer[6] > 3 && settimedata.nlooptimer[6] < 5)
 				{
+					printf("Channel four the GPIO Set Low time = %d \r\n" , settimedata.nlooptimer[6]);
 					SetPassageOxygen(4 , 0);
 				}
 			}			
@@ -397,20 +406,25 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 				}
 				gStartO2 = 1;
 				settimedata.nlooptimer[4]++;
+				printf("Manual operation Mode time = %d \r\n" , settimedata.nlooptimer[4]);
 				if(settimedata.nlooptimer[4] == 10 || settimedata.nlooptimer[4] == 11)
 				{//开始放氧
 					switch(Getflat.Flag_1234switch)
 					{
 						case 0:
+							printf("one number begin Release oxygen \r\n");
 							gFlagPassageOxygen = 1;
 							break;
 						case 1:
+							printf("two number begin Release oxygen \r\n");
 							gFlagPassageOxygen = 2;
 							break;
 						case 2:
+							printf("three number begin Release oxygen \r\n");
 							gFlagPassageOxygen = 3;
 							break;
 						case 3:
+							printf("four number begin Release oxygen \r\n");
 							gFlagPassageOxygen = 4;
 							break;
 						default:
@@ -422,17 +436,25 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 					switch(Getflat.Flag_1234switch)
 					{
 						case 0:
+							printf("one number oxygen is over \r\n");
 							setLed_passage(LEDNUM1, READ);
 							break;
+						
 						case 1:
+							printf("two number oxygen is over \r\n");
 							setLed_passage(LEDNUM2, READ);
 							break;
+						
 						case 2:
+							printf("three number oxygen is over \r\n");
 							setLed_passage(LEDNUM3, READ);
 							break;
+						
 						case 3:
+							printf("four number begin Release oxygen \r\n");
 							setLed_passage(LEDNUM4, READ);
 							break;
+						
 						default:
 							break;						
 					}
@@ -442,6 +464,7 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 			}
 			else
 			{
+				printf("reset Uart0IQR ! \r\n");
 				settimedata.nlooptimer[4] = 0;
 				gFlagManualMode = 0;
 				memarynew = 1;									//释放10S，用于下次判断
@@ -485,9 +508,10 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 						break;			
 					default:
 						break;
-				}					
+				}			
+				usart_interrupt_enable(USART0 , USART_INT_RBNE);	
 				gGetO2DataOK = 0;		//重新看氧气值			
-				/**	自动流程走完/手动流程走完/禁止放氧走完**/
+				/**	手动流程走完**/
 				settimedata.nlooptimer[1] = 0;		//3.启动10S定时器，并判读10S内是否启动按下按下
 				gFlag10s = 1;											//启动10s定时器，settimedata.nlooptimer[1] 计数器自加
 			}
@@ -496,16 +520,19 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 		
 		/***** 拒绝放氧模式	等待2MIN*****/
 		if(rejectMode == 1)
-		{//拒绝放氧模式
+		{	
+			//拒绝放氧模式
 			if(settimedata.nlooptimer[4] < REJECTFREEDOYXGENWAITTIMER)
 			{
 				settimedata.nlooptimer[4]++;
+				printf("enter refuse Release oxygen number = %d \r\n",settimedata.nlooptimer[4]);
 			}
 			else if(settimedata.nlooptimer[4] >= REJECTFREEDOYXGENWAITTIMER)
-			//else if(settimedata.nlooptimer[4] >= 240)
 			{
+				printf("enter refuse Release oxygen number = %d \r\n" , settimedata.nlooptimer[4]);
 				settimedata.nlooptimer[4] = 0;
 				//通道灯红常亮
+				printf("number = %d red led  bright\r\n" , Getflat.Flag_1234switch);
 				switch(Getflat.Flag_1234switch)
 				{
 					case 0:
@@ -532,6 +559,7 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 				{
 					setLed_gear(GREEN_HIGHT , 1);
 				}
+				printf("enter refuse Release oxygen Mode is over");
 				//启动红灯闪烁,如果在这里启动了红灯闪烁那么在哪里去关闭它？
 				//gFlagStartLedReadFlash = 1;	
 				rejectMode = 0;
@@ -539,11 +567,11 @@ void HAL_TIM_PeriodElapsedCallback(timer_parameter_struct *htim)
 				memarynew = 1;		//开启下一轮
 				gGetO2DataOK = 0;		//重新看氧气值
 				gStartO2 = 0;
-				
 				/**	自动流程走完/手动流程走完/禁止放氧走完**/
-//				memarynew = 1;										//释放10S，用于下次判断
+				//memarynew = 1;										//释放10S，用于下次判断
 				settimedata.nlooptimer[1] = 0;		//3.启动10S定时器，并判读10S内是否启动按下按下
 				gFlag10s = 1;											//启动10s定时器，settimedata.nlooptimer[1] 计数器自加
+				usart_interrupt_enable(USART0 , USART_INT_RBNE);	
 			}
 		}
 		/********************************/
