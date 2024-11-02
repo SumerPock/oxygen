@@ -16,8 +16,8 @@ unsigned char FRAMETAIL = 0x0A;
 //#define O2DATALESSGEASS		//强制氧气含量小于阈值
 #define AUTOMODE						//自动模式
 
-#define HIGHTO2		1470			//高档位氧气阈值	
 //#define HIGHTO2		2470			//高档位氧气阈值	
+#define HIGHTO2		1470			//高档位氧气阈值	
 #define LOWO2			1240			//低档位氧气阈值
 
 
